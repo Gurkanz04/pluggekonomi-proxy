@@ -1,27 +1,22 @@
 export default async function handler(req, res) {
   try {
-    const html = await fetch("https://vimla.se/bestall/student/", {
+    const response = await fetch("https://api.ringup.se/api/v1/subscriptions", {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       },
-    }).then((r) => r.text());
+    });
 
-    // Leta efter script-blocket där Vimla bäddar in abonnemangsdata
-    const match = html.match(/window\.__INITIAL_STATE__\s*=\s*(\{.*?\});/s);
-
-    if (!match) {
-      return res.status(500).json({
-        error: "Kunde inte hitta abonnemangsdata i Vimlas HTML.",
-      });
+    if (!response.ok) {
+      return res.status(500).json({ error: "Kunde inte hämta data från RingUp API." });
     }
 
-    const state = JSON.parse(match[1]);
+    const data = await response.json();
 
-    // Vimla lägger studentabonnemang här
-    const items = state?.subscriptions?.student || [];
+    // Filtrera ut studentabonnemang
+    const studentPlans = data.filter((item) => item.category === "student");
 
-    const result = items.map((item) => ({
+    const result = studentPlans.map((item) => ({
       data_amount: item.dataAmount + " GB",
       price: item.price + " kr/mån",
       promo_price: "20 kr/mån",
